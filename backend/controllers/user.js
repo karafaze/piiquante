@@ -2,23 +2,8 @@ const User = require("../models/user");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 
-exports.all = (req, res) => {
-    User.find()
-        .then(users => {
-            res.status(200).json({
-                users: users
-            })
-        })
-        .catch(err => {
-            res.status(500).json({
-                err: err
-            })
-        })
-
-}
-
 exports.signup = (req, res) => {
-    User.findOne({ email : req.body.email })
+    User.findOne({ email: req.body.email })
         .then((user) => {
             if (user) {
                 return res.status(403).json({
@@ -35,13 +20,10 @@ exports.signup = (req, res) => {
                         user.save()
                             .then(() =>
                                 res.status(201).json({
-                                    message:
-                                        "You account has been created. Welcome on board.",
-                    })
+                                    message: "You account has been created. Welcome on board.",
+                                })
                             )
-                            .catch(err => 
-                                res.status(400).json({ err})
-                            )
+                            .catch((err) => res.status(400).json({ err }));
                     })
                     .catch((err) => {
                         res.status(500).json({
@@ -53,8 +35,8 @@ exports.signup = (req, res) => {
         .catch((err) => {
             res.status(500).json({
                 errorMessage: `The following error occured: ${err}`,
-            })
-        })
+            });
+        });
 };
 
 exports.login = (req, res) => {
@@ -62,8 +44,7 @@ exports.login = (req, res) => {
         .then((userData) => {
             if (!userData) {
                 return res.status(404).json({
-                    errorMessage:
-                        "Sorry, this user is not registered to our website.",
+                    errorMessage: "Sorry, this user is not registered to our website.",
                 });
             }
             bcrypt
@@ -81,8 +62,7 @@ exports.login = (req, res) => {
                     );
                     res.status(200).json({
                         token: accessToken,
-                        email: userData.email,
-                        password: userData.password,
+                        userId: userData.id,
                     });
                 })
                 .catch((err) => {
