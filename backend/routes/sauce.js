@@ -6,9 +6,9 @@ const multer = require("../middleware/multer");
 
 const sauceController = require('../controllers/sauce');
 
-router.get("", authCheck, sauceController.getSauces);
-router.get("/:id", authCheck, sauceController.getOneSauce)
-router.post("", authCheck, multer, sauceController.addSauce);
+router.get("/:id", authCheck, sauceController.getOneSauce);
+router.get("/", authCheck, sauceController.getSauces);
+router.post("/", authCheck, multer, sauceController.addSauce);
 // router.put("/:id", multer, sauceController.updateSauce);
 
 module.exports = router;

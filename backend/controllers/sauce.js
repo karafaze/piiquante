@@ -36,8 +36,8 @@ exports.addSauce = (req, res) => {
         heat: req.body.sauce.heat,
         likes: 0,
         dislikes: 0,
-        userLikes: [],
-        userDislikes: [],
+        usersLikes: [],
+        usersDislikes: [],
         userId: req.auth.userId,
     });
     sauce
