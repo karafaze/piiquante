@@ -2,8 +2,8 @@ const Sauce = require("../models/sauce");
 const fs = require("fs");
 const path = require("path");
 
+// retrieve all sauces from DB
 exports.getSauces = (req, res) => {
-    // retrieve all sauces from DB
     Sauce.find()
         .then((sauces) => {
             res.status(200).json(sauces);
@@ -15,8 +15,8 @@ exports.getSauces = (req, res) => {
         });
 };
 
+// retrieve specific sauces with _id
 exports.getOneSauce = (req, res) => {
-    // retrieve specific sauces with _id
     Sauce.findOne({ _id: req.params.id })
         .then((sauce) => {
             res.status(200).json(sauce);
@@ -28,8 +28,8 @@ exports.getOneSauce = (req, res) => {
         });
 };
 
+// add new sauce to database
 exports.addSauce = (req, res) => {
-    // add new sauce to database
     req.body.sauce = JSON.parse(req.body.sauce);
     // create base url for imageUrl
     const url = `${req.protocol}://${req.get("host")}`;
@@ -61,8 +61,8 @@ exports.addSauce = (req, res) => {
         );
 };
 
+// update sauce from database
 exports.updateSauce = (req, res) => {
-    // update sauce from database
     Sauce.findById({ _id: req.params.id})
         .then(sauceObject => {
             // create imageUrl path of the sauce in case it gets updated
@@ -128,8 +128,8 @@ exports.updateSauce = (req, res) => {
         })
 };
 
+// delete sauce from database
 exports.deleteSauce = (req, res) => {
-    // delete sauce from database
     Sauce.findOne({ _id: req.params.id }).then((sauce) => {
         // we first check if sauce exists
         if (!sauce) {
@@ -175,9 +175,8 @@ exports.deleteSauce = (req, res) => {
     });
 };
 
+// manage the like/dislike options for the sauce 
 exports.handleLike = (req, res) => {
-    // manage the like/dislike options for the sauce 
-
     // begin we instantiating constants to be used frequently
     const sauceId = req.params.id;
     const userId = req.body.userId;
@@ -203,8 +202,10 @@ exports.handleLike = (req, res) => {
                             .then(() => {
                                 console.log('Done')
                             })
-                            .catch(err => {
-                                console.log(err)
+                            .catch(() => {
+                                res.status(500).json({
+                                    errorMessage: 'An error occured.'
+                                })
                             })
                     }
                     break;
@@ -224,8 +225,10 @@ exports.handleLike = (req, res) => {
                             .then(() => {
                                 console.log('Done')
                             })
-                            .catch(err => {
-                                console.log(err)
+                            .catch(() => {
+                                res.status(500).json({
+                                    errorMessage: 'An error occured.'
+                                })
                             })
                     }
                     break;
@@ -238,8 +241,10 @@ exports.handleLike = (req, res) => {
                             .then(() => {
                                 console.log('Done')
                             })
-                            .catch(err => {
-                                console.log(err)
+                            .catch(() => {
+                                res.status(500).json({
+                                    errorMessage: 'An error occured.'
+                                })
                             })
                     } else if (checkDislikeList(req.body.userId, sauceObject)) {
                         // now we check if he's in usersDisliked list
@@ -248,8 +253,10 @@ exports.handleLike = (req, res) => {
                             .then(() => {
                                 console.log('Done')
                             })
-                            .catch(err => {
-                                console.log(err)
+                            .catch(() => {
+                                res.status(500).json({
+                                    errorMessage: 'An error occured.'
+                                })
                             })
                     } else {
                         // if he's in either of the list (e.g if users uses POSTMAN)
@@ -299,14 +306,14 @@ function addUserLike(resObject, reqObject, incValue, userId){
                 $inc: { likes: incValue},
                 $push: { usersLiked: userId},
             })
-            .then(() => {
-                resolve(resObject.status(200).json({
-                    message: 'Your preferences have been saved'
-                }))
-            })
-            .catch((err) => {
-                throw err
-            })
+            .then(
+                () => {
+                    resolve(resObject.status(200).json({
+                        message: 'Your preferences have been saved'
+                }))},
+                () => {
+                    reject (new Error('Something happened'))
+                })
     })
 }
 
@@ -319,13 +326,13 @@ function removeUserLike(resObject, reqObject, incValue, userId){
                 $pull: { usersLiked: userId },
             }
         )
-            .then(() => {
+        .then(
+            () => {
                 resolve(resObject.status(200).json({
-                    message: "Your preferences have been saved.",
-                }));
-            })
-            .catch(err => {
-                throw err
+                    message: 'Your preferences have been saved'
+            }))},
+            () => {
+                reject (new Error('Something happened'))
             })
     })
 }
@@ -338,14 +345,14 @@ function addUserDislike(resObject, reqObject, incValue, userId){
                 $inc: { dislikes: incValue * -1},
                 $push: { usersDisliked: userId},
             })
-            .then(() => {
-                resolve(resObject.status(200).json({
-                    message: 'Your preferences have been saved'
-                }))
-            })
-            .catch((err) => {
-                throw err
-            })
+            .then(
+                () => {
+                    resolve(resObject.status(200).json({
+                        message: 'Your preferences have been saved'
+                }))},
+                () => {
+                    reject (new Error('Something happened'))
+                })
     })
 }
 
@@ -358,13 +365,13 @@ function removeUserDislike(resObject, reqObject, incValue, userId){
                 $pull: { usersDisliked: userId },
             }
         )
-            .then(() => {
+        .then(
+            () => {
                 resolve(resObject.status(200).json({
-                    message: "Your preferences have been saved.",
-                }));
-            })
-            .catch(err => {
-                throw err
+                    message: 'Your preferences have been saved'
+            }))},
+            () => {
+                reject (new Error('Something happened'))
             })
     })
 }
