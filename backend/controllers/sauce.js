@@ -181,6 +181,7 @@ exports.handleLike = (req, res) => {
     const sauceId = req.params.id;
     const userId = req.body.userId;
     const userChoice = req.body.like;
+    let userOpinion = '';
     // first we retrieve the sauce from the database to get access to its properties
     Sauce.findOne({ _id: sauceId })
         .then((sauceObject) => {
@@ -197,11 +198,10 @@ exports.handleLike = (req, res) => {
                                 "Sorry, only one vote per sauce per user",
                         });
                     } else {
+                        userOpinion = 'likes'
                         // if he's not, we update the likes/usersLiked properties of the sauce 
-                        addUserLike(res, req, userChoice, userId)
-                            .then(() => {
-                                console.log('Done')
-                            })
+                        addUserOpinion(res, sauceId, userChoice, userId, userOpinion)
+                            .then()
                             .catch(() => {
                                 res.status(500).json({
                                     errorMessage: 'An error occured.'
@@ -214,17 +214,15 @@ exports.handleLike = (req, res) => {
                     // first we check if user is not already in usersDisliked list
                     // OR if user is in usersLiked list
                     if (!checkRequestValidity(req.body.userId, sauceObject)) {
-                        // if he's in one of the 2 list, we return error and message
+                        // if he's in one of the 2 lists, we return error and message
                         return res.status(403).json({
                             errorMessage:
                                 "Sorry, only one vote per sauce per user",
                         });
                     } else {
                         // if he's not, we update the dislikes/usersDisliked properties of the sauce 
-                        addUserDislike(res, req, userChoice, userId)
-                            .then(() => {
-                                console.log('Done')
-                            })
+                        addUserOpinion(res, sauceId, userChoice, userId, userOpinion)
+                            .then()
                             .catch(() => {
                                 res.status(500).json({
                                     errorMessage: 'An error occured.'
@@ -236,11 +234,10 @@ exports.handleLike = (req, res) => {
                 case 0:
                     // first we check if user is in usersLiked list
                     if (checkLikeList(req.body.userId, sauceObject)) {
+                        userOpinion = 'likes';
                         // if he is we remove him from the list and decrement likes by 1
-                        removeUserLike(res, req, userChoice, userId)
-                            .then(() => {
-                                console.log('Done')
-                            })
+                        removeUserOpinion(res, sauceId, userChoice, userId, userOpinion)
+                            .then()
                             .catch(() => {
                                 res.status(500).json({
                                     errorMessage: 'An error occured.'
@@ -249,17 +246,15 @@ exports.handleLike = (req, res) => {
                     } else if (checkDislikeList(req.body.userId, sauceObject)) {
                         // now we check if he's in usersDisliked list
                         // if he is we remove him from the list and decrement dislikes by 1
-                        removeUserDislike(res, req, userChoice, userId)
-                            .then(() => {
-                                console.log('Done')
-                            })
+                        removeUserOpinion(res, sauceId, userChoice, userId, userOpinion)
+                            .then()
                             .catch(() => {
                                 res.status(500).json({
                                     errorMessage: 'An error occured.'
                                 })
                             })
                     } else {
-                        // if he's in either of the list (e.g if users uses POSTMAN)
+                        // if userChoice is not 1, -1 or 0 (e.g if users uses POSTMAN and sends 99)
                         // we respond with bad request
                         res.status(400).json({
                             errorMessage: "Sorry you need to like a sauce before",
@@ -298,80 +293,46 @@ function checkDislikeList(userId, sauce) {
     return sauce.usersDisliked.includes(userId);
 }
 
-function addUserLike(resObject, reqObject, incValue, userId){
+// handling adding a user opinion
+function addUserOpinion(resObject, sauceId, incValue, userId, userOpinion){
     return new Promise((resolve, reject) => {
         Sauce.updateOne(
-            { _id: reqObject.params.id },
+            { _id : sauceId },
             {
-                $inc: { likes: incValue},
-                $push: { usersLiked: userId},
-            })
-            .then(
-                () => {
-                    resolve(resObject.status(200).json({
-                        message: 'Your preferences have been saved'
-                }))},
-                () => {
-                    reject (new Error('Something happened'))
-                })
-    })
-}
-
-function removeUserLike(resObject, reqObject, incValue, userId){
-    return new Promise((resolve, reject) => {
-        Sauce.updateOne(
-            { _id: reqObject.params.id },
-            {
-                $inc: { likes: incValue - 1 },
-                $pull: { usersLiked: userId },
+                // using ternary operator, we check if we're in a LIKE situation or DISLIKE situation
+                $inc: userOpinion === 'likes' ? { likes: incValue} : { dislikes: incValue * -1 },
+                $push: (userOpinion === 'likes' ? { usersLiked: userId} : { usersDisliked: userId }),
             }
         )
         .then(
             () => {
                 resolve(resObject.status(200).json({
                     message: 'Your preferences have been saved'
-            }))},
+                }))},
             () => {
                 reject (new Error('Something happened'))
-            })
-    })
+                }
+            )})
 }
 
-function addUserDislike(resObject, reqObject, incValue, userId){
+// handling removing a user opinion
+function removeUserOpinion(resObject, sauceId, incValue, userId, userOpinion){
     return new Promise((resolve, reject) => {
         Sauce.updateOne(
-            { _id: reqObject.params.id },
+            { _id : sauceId },
             {
-                $inc: { dislikes: incValue * -1},
-                $push: { usersDisliked: userId},
-            })
-            .then(
-                () => {
-                    resolve(resObject.status(200).json({
-                        message: 'Your preferences have been saved'
-                }))},
-                () => {
-                    reject (new Error('Something happened'))
-                })
-    })
-}
-
-function removeUserDislike(resObject, reqObject, incValue, userId){
-    return new Promise((resolve, reject) => {
-        Sauce.updateOne(
-            { _id: reqObject.params.id },
-            {
-                $inc: { dislikes: incValue - 1 },
-                $pull: { usersDisliked: userId },
+                // using ternary operator, we check if we're in a LIKE situation or DISLIKE situation
+                $inc: userOpinion === 'likes' ? { likes: incValue - 1} : { dislikes : incValue - 1 },
+                $pull: userOpinion === 'likes' ? { usersLiked: userId} : { usersDisliked: userId },
             }
         )
         .then(
             () => {
                 resolve(resObject.status(200).json({
                     message: 'Your preferences have been saved'
-            }))},
+                }))},
             () => {
                 reject (new Error('Something happened'))
+                })
             })
-    })
 }
